@@ -157,3 +157,74 @@ resource "azurerm_network_security_rule" "ingress" {
 
   depends_on = [module.demo_app]
 }
+
+
+resource "azurerm_resource_group" "example" {
+  name     = "tflex-cosmosdb-account-rg"
+  location = "West Europe"
+}
+
+resource "azurerm_cosmosdb_account" "example" {
+  name                = "tfex-cosmosdb-account"
+  resource_group_name = azurerm_resource_group.example.name
+  location            = azurerm_resource_group.example.location
+  offer_type          = "Standard"
+
+  capabilities {
+    name = "EnableCassandra"
+  }
+
+  consistency_policy {
+    consistency_level = "Strong"
+  }
+
+  geo_location {
+    location          = azurerm_resource_group.example.location
+    failover_priority = 0
+  }
+}
+
+resource "azurerm_cosmosdb_cassandra_keyspace" "example" {
+  name                = "tfex-cosmos-cassandra-keyspace"
+  resource_group_name = azurerm_cosmosdb_account.example.resource_group_name
+  account_name        = azurerm_cosmosdb_account.example.name
+  throughput          = 400
+}
+
+
+resource "azurerm_resource_group" "example" {
+  name     = "example-resources"
+  location = "West Europe"
+}
+
+resource "azurerm_kubernetes_cluster" "example" {
+  name                = "example-aks1"
+  location            = azurerm_resource_group.example.location
+  resource_group_name = azurerm_resource_group.example.name
+  dns_prefix          = "exampleaks1"
+
+  default_node_pool {
+    name       = "default"
+    node_count = var.default_node_pool
+    vm_size    = "Standard_D2_v2"
+  }
+
+  identity {
+    type = "SystemAssigned"
+  }
+
+  tags = {
+    Environment = "Production"
+  }
+}
+
+output "client_certificate" {
+  value     = azurerm_kubernetes_cluster.example.kube_config.0.client_certificate
+  sensitive = true
+}
+
+output "kube_config" {
+  value = azurerm_kubernetes_cluster.example.kube_config_raw
+
+  sensitive = true
+}

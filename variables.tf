@@ -49,3 +49,8 @@ variable "vnet_subnets" {
     "subnet3" = "10.0.3.0/24",
   }
 }
+
+variable "default_node_pool" {
+  type    = number
+  default = 1
+}
